@@ -6,22 +6,17 @@
  */
 export function sortStrings(arr, param = 'asc') {
   const resultArray = [...arr];
+  const options = { sensitivity: 'case', caseFirst: 'upper' };
+  const locale = ['ru', 'en'];
+  const collator = new Intl.Collator(locale, options);
 
   if (param === 'asc') {
-
-    return resultArray.sort((x, y) => SortArrayLocale(x, y));
-
+    resultArray.sort((a, b) => collator.compare(a, b));
   } else if (param === 'desc') {
-
-    return resultArray.sort((x, y) => SortArrayLocale(x, y)).reverse();
-
+    resultArray.sort((a, b) => collator.compare(b, a));
   }
-}
 
-function SortArrayLocale(x, y) {
-  const locale = /[ А-Яа-я]/i.test(x) ? 'ru' : 'en';
-
-  return x.localeCompare(y, locale, { sensitivity: 'case', caseFirst: 'upper' });
+  return resultArray;
 }
 
 

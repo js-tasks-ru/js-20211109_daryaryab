@@ -8,8 +8,8 @@ export const pick = (obj, ...fields) => {
   const result = {};
   const keys = Object.keys(obj);
 
-  for (let i in keys) {
-    if (fields.indexOf(keys[i]) != -1) {
+  for (const i in keys) {
+    if (fields.includes(keys[i])) {
       result[keys[i]] = obj[keys[i]];
     }
   }
