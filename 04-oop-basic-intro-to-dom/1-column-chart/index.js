@@ -1,10 +1,10 @@
 export default class ColumnChart {
-  constructor({ data = [], label = '', value = 0, link = '', formatHeading}) {
+  constructor({ data = [], label = '', value = 0, link = '', chartHeight = 50, formatHeading} = {}) {
     this.data = this.getColumnProps(data),
     this.label = label,
-    this.value = value,
+    this.value = this.getFormattingValue(value),
     this.link = link,
-    this.chartHeight = 50,
+    this.chartHeight = chartHeight,
     this.formatHeading = formatHeading,
     this.render();
   }
@@ -21,15 +21,28 @@ export default class ColumnChart {
     });
   }
 
+  getFormattingValue(value) {
+    return this.formatHeading ? this.formatHeading(value) : value;
+  }
+
   update(newData) {
     this.data = this.getColumnProps(newData);
   }
 
+  destroy() {
+    this.element = null;
+  }
+
   remove() {
-    document.getElementById(this.label).remove();
+    const node = document.getElementById(this.label);
+
+    if (node.parentNode) {
+      node.parentNode.removeChild(node);
+    }
   }
 
   render() {
+    console.log(this.value)
     const formattingValue = this.formatHeading ? this.formatHeading(this.value/1000) : this.value;
     const element = document.createElement('div');
     element.className = (this.data.length) ? 'column-chart' : 'column-chart column-chart_loading';
