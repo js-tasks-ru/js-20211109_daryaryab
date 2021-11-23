@@ -42,7 +42,6 @@ export default class ColumnChart {
   }
 
   render() {
-    console.log(this.value)
     const formattingValue = this.formatHeading ? this.formatHeading(this.value/1000) : this.value;
     const element = document.createElement('div');
     element.className = (this.data.length) ? 'column-chart' : 'column-chart column-chart_loading';
