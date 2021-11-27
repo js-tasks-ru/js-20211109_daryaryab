@@ -1,47 +1,120 @@
 export default class SortableTable {
-  constructor(
-    headerConfig = [id = '', title = '', sortable = false, template = data = []],
-    data = []
-  ) {
-    this.headerConfig = headerConfig, 
-    this.data = data, 
+  constructor(headerConfig = [], data = []) {
+    this.headerConfig = headerConfig;
+    this.data = Array.isArray(data) ? data : data.data;
     this.render();
   }
+  element;
+  subElements = {};
 
-  static compare(fieldValue, orderValue, arr) {
-    const resultArray = [...arr]
-    
-    const options = { sensitivity: 'case', caseFirst: 'upper' };
-    const locale = ['ru', 'en'];
-    const collator = new Intl.Collator(locale, options);
+  getTableHeader() {
+    return `
+      <div data-element='header' class='sortable-table__header sortable-table__row'>
+        ${this.headerConfig.map((item) => {
+          return `
+            <div class='sortable-table__cell' data-id='${item.id}' data-sortable='${item.sortable}'>
+            <span>${item.title}</span>
+            <span data-element='arrow' class='sortable-table__sort-arrow'>
+            <span class='sort-arrow'></span>
+            </span>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
 
-    if (orderValue === 'asc') {
-      resultArray.sort((a, b) =>
-        collator.compare(a[fieldValue], b[fieldValue])
-      );
-    } else if (orderValue === 'desc') {
-      resultArray.sort((a, b) => {
-        collator.compare(b[fieldValue], a[fieldValue])
-      });
+  getTableBody() {
+    return `
+      <div data-element='body' class='sortable-table__body'>
+        ${this.getTableRows(this.data)}
+      </div>`;
+  }
+
+  getTableRows(data) {
+    return data.map(item => {
+        return `
+          <a href='/products/${item.id}' class='sortable-table__row'>
+            ${this.getTableRow(item)}
+          </a>`;
+    }).join('');
+  }
+
+  getTableRow(item) {
+    const cells = this.headerConfig.map(({id,template}) => {
+      return {id, template}
+    });
+
+    return cells.map(({id, template}) => {
+      return template
+        ? template(item[id])
+        : `<div class='sortable-table__cell'>${item[id]}</div>`;
+    }).join('');
+  }
+
+  getTable() {
+    return `
+      <div class='sortable-table'>
+        ${this.getTableHeader()}
+        ${this.getTableBody()}
+      </div>`;
+  }
+
+  render() {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = this.getTable();
+
+    const element = wrapper.firstElementChild;
+    this.element = element;
+
+    this.subElements = this.getSubElements(this.element);
+  }
+
+  getSubElements(element) {
+    const result = {};
+    const elements = element.querySelectorAll('[data-element]');
+
+    for (const subElement of elements) {
+      const name = subElement.dataset.element;
+      result[name] = subElement;
     }
 
-    return resultArray;
+    return result;
   }
 
-  update(data) {
-    this.data = data;
-    
-    this.render();
+  updateTable(arr) {
+    return (this.subElements.body.innerHTML = this.getTableBody(arr));
   }
 
-  sort(fieldValue, orderValue) {
-    const data = this.constructor.compare(fieldValue, orderValue, this.data);
-    this.update(data);
+  sort(field, order) {
+    const sortedData = this.sortData(field, order);
+    const allColumns = this.element.querySelectorAll('.sortable-table__cell[data-id]');
+    const currentColumn = this.element.querySelector(`.sortable-table__cell[data-id='${field}']`);
+
+    allColumns.forEach(column => {
+      column.dataset.order = '';
+    });
+
+    currentColumn.dataset.order = order;
+
+    this.subElements.body.innerHTML = this.getTableRows(sortedData);
   }
 
-  destroy() {
-    this.remove();
-    this.element = null;
+  sortData(field, order){
+    const arr = [...this.data];
+    const column = this.headerConfig.find(item => item.id === field);
+    const { sortType } = column;
+    const directions = {asc: 1, desc: -1};
+    const direction = directions[order];
+
+    return arr.sort((a, b)=>{
+      switch (sortType) {
+        case 'number':
+          return direction * (a[field] - b[field]);
+        case 'string':
+          return direction * a[field].localeCompare(b[field], ['ru', 'en'])
+        default:
+         return direction * (a[field] - b[field]);
+      }
+    });
   }
 
   remove() {
@@ -50,64 +123,9 @@ export default class SortableTable {
     }
   }
 
-  createHeader() {
-    const headerTitle = this.headerConfig.map((item) => {
-      const arrow = item.sortable ? `<span data-element='arrow' class='sortable-table__sort-arrow'><span class='sort-arrow'></span></span>` : '';
-
-      return `
-        <div class='sortable-table__cell' data-id='${item.id}' data-sortable='${item.sortable}' data-order='asc'>
-          <span>${item.title}</span>
-          ${arrow}
-        </div>
-      `;
-    });
-
-    return `
-      <div data-element='header' class='sortable-table__header sortable-table__row'>
-        ${headerTitle.join('')}
-      </div>
-    `;
-  }
-
-  createTableRow() {
-    const tableRows = this.data.map((item) => {
-      return `
-         <a href='/products/3d-ochki-epson-elpgs03' class='sortable-table__row'>
-          <div class='sortable-table__cell'>
-            <img class='sortable-table-image' alt='Image' src='${item.images[0].url}'>
-          </div>
-          <div class='sortable-table__cell'>${item.title}</div>
-
-          <div class='sortable-table__cell'>${item.quantity}</div>
-          <div class='sortable-table__cell'>${item.price}</div>
-          <div class='sortable-table__cell'>${item.sales}</div>
-        </a>
-      `;
-    });
-    return `
-      <div data-element='body' class='sortable-table__body'>
-       ${tableRows.join('')}
-      </div>
-    `;
-  }
-
-  get template() {
-    return `
-            <div data-element='productsContainer' class='products-list__container'>
-              <div class='sortable-table'>
-                ${this.createHeader()}
-                ${this.createTableRow()}
-              </div>
-            </div>
-          `;
-  }
-
-  render() {
-    const element = document.createElement('div');
-
-    element.innerHTML = this.template;
-
-    this.element = element.firstElementChild;
+  destroy() {
+    this.remove();
+    this.element = null;
+    this.subElements = {};
   }
 }
-
