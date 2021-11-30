@@ -164,9 +164,6 @@ export default class SortableTable {
   }
 
   destroy() {
-    const tableHeader = this.element.querySelector('.sortable-table__header[data-element]');
-    tableHeader.removeEventListeners('click', this.onClickSort);
-
     this.remove();
     this.element = null;
     this.subElements = {};
