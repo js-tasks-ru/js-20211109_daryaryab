@@ -1,48 +1,52 @@
 class Tooltip {
   static activeTooltip;
-  element;
 
-  constructor(text) {
-    this.text = text;
+  onPointerOver = (event) => {
+    const element = event.target.closest('[data-tooltip]');
+
+    if (element) {
+      this.render(element.dataset.tooltip);
+      document.addEventListener('pointermove', this.onPointerMove);
+    }
+  };
+
+  onPointerMove = (event) => {
+    this.moveTooltip(event);
+  };
+
+  onPointerOut = () => {
+    this.remove();
+    document.removeEventListener('pointermove', this.onPointerMove);
+  };
+
+  constructor() {
+    if (Tooltip.activeTooltip) {
+      return Tooltip.activeTooltip;
+    }
+
+    Tooltip.activeTooltip = this;
+  }
+
+  render(html) {
+    this.element = document.createElement('div');
+    this.element.className = 'tooltip';
+    this.element.innerHTML = html;
+
+    document.body.append(this.element);
+  }
+
+  initialize() {
     this.addEventListeners();
   }
 
-  render(event) {
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = this.template;
-    const element = wrapper.firstElementChild;
-    this.element = element;
-
-    this.element.innerText = this.text ? this.text : "";
-    this.element.style.left = event ? `${event.clientX}px` : 0;
-    this.element.style.top = event ? `${event.clientY}px` : 0;
-    this.initialize();
-  }
-
-  initialize = () => {
-    if (Tooltip.activeTooltip) {
-     Tooltip.activeTooltip.remove();
-    }
-   
-    document.body.append(this.element);
-    
-    Tooltip.activeTooltip = this;
-  };
-
-  get template() {
-    return `<div class="tooltip">${this.text}</div>`;
-  }
-
   addEventListeners() {
-    const elements = document.querySelectorAll("[data-tooltip]");
+    document.addEventListener('pointerover', this.onPointerOver);
+    document.addEventListener('pointerout', this.onPointerOut);
+  }
 
-    elements.forEach((element) => {
-      element.addEventListener("pointerover", (event) => {
-        this.text = element.closest("[data-tooltip]").dataset.tooltip;
-
-        this.render(event);
-      });
-    });
+  moveTooltip(event) {
+    this.element.style.left = `${event.clientX}px`;
+    this.element.style.top = `${event.clientY}px`;
   }
 
   remove() {
@@ -52,9 +56,11 @@ class Tooltip {
   }
 
   destroy() {
+    document.removeEventListener('pointerover', this.onPointerOver);
+    document.removeEventListener('pointerout', this.onPointerOut);
+    document.removeEventListener('pointermove', this.onPointerMove);
     this.remove();
     this.element = null;
-    Tooltip.activeTooltip = null;
   }
 }
 
